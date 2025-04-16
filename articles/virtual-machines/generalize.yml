@@ -114,7 +114,7 @@ procedureSection:
       - | 
         Then change the directory to %windir%\system32\sysprep, and then run:
         ```
-        sysprep.exe /generalize /shutdown
+        sysprep.exe /generalize /shutdown /oobe
         ```
       - |   
         The VM will shut down when Sysprep is finished generalizing the VM. Do not restart the VM.
