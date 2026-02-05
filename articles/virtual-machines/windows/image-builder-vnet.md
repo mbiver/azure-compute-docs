@@ -212,13 +212,24 @@ Invoke-AzResourceAction -ResourceName $imageTemplateName -ResourceGroupName $ima
 First, you query the image template for current or last run status, and for image template settings.
 
 ```powerShell
-$managementEp = $currentAzureContext.Environment.ResourceManagerUrl
+# Get the current Azure context and extract the Resource Manager endpoint
+$currentAzContext = Get-AzContext
+$managementEp = $currentAzContext.Environment.ResourceManagerUrl.TrimEnd('/')
 
-$urlBuildStatus = [System.String]::Format("{0}subscriptions/{1}/resourceGroups/$imageResourceGroup/providers/Microsoft.VirtualMachineImages/imageTemplates/{2}?api-version=2020-02-14", $managementEp, $currentAzureContext.Subscription.Id,$imageTemplateName)
+# Get an Azure Resource Manager access token using the dynamic endpoint
+$accessToken = az account get-access-token --resource $managementEp --query accessToken -o tsv
 
-$buildStatusResult = Invoke-WebRequest -Method GET  -Uri $urlBuildStatus -UseBasicParsing -Headers  @{"Authorization"= ("Bearer " + $accessToken)} -ContentType application/json 
-$buildJsonStatus =$buildStatusResult.Content
-$buildJsonStatus
+# Build the Image Builder template status URL
+$url = [System.String]::Format("{0}/subscriptions/{1}/resourceGroups/{2}/providers/Microsoft.VirtualMachineImages/imageTemplates/{3}?api-version=2020-02-14", $managementEp, $subscriptionID, $imageResourceGroup, $imageTemplateName)
+
+# Query the template status (JSON parsed automatically)
+$response = Invoke-RestMethod -Uri $url -Headers @{ Authorization = "Bearer $accessToken" }
+
+# Show the full template properties (includes provisioningState, etc.)
+$response | Format-List
+
+# Show only the last run status (the key fields most customers want)
+$response.properties.lastRunStatus | Format-List
 
 ```
 
